@@ -19,7 +19,7 @@ class Board
     end
     puts "#{@players[0].name} will now play #{@players[1].name}."
 
-    @active_player = @players[0]
+    @active_player = @players[1]
 
     main_loop
   end
@@ -30,7 +30,9 @@ class Board
     puts ''
   end
 
-  def to_s
+  private
+
+  def print_board
     Board.print_break
     @grid.each do |row|
       print '|'
@@ -82,19 +84,44 @@ class Board
       row.each do |square|
         row_complete = false if square != first_in_row
       end
-      print "Row: '#{row}' row_complete: #{row_complete} first_in_row: '#{first_in_row}'"
+      #print "Row: '#{row}' row_complete: #{row_complete} first_in_row: '#{first_in_row}'"
       return true if row_complete && first_in_row != ' '
     end
+    false
   end
+
+  def diagonal_win?
+    top_left = @grid[0][0]
+    bottom_left = @grid[2][0]
+    if @grid[1][1] == top_left && @grid[2][2] == top_left
+      return true unless top_left == ' '
+    end
+    if @grid[1][1] == bottom_left && @grid[0][2] == bottom_left
+      return true unless bottom_left == ' '
+    end
+    false
+  end
+
+  def column_win?
+    @@size.times do |c|
+      first_in_col = @grid[0][c]
+      col_complete = first_in_col == ' ' ? false : true
+      @@size.times do |r|
+        col_complete = false if @grid[r][c] != first_in_col
+      end
+      return true if col_complete && first_in_col != ' '
+    end
+    false
+  end
+
 
   def game_over?
     #three in a row:
     #across each, down each, two diagonals
     #if full: draw
-    winner = row_win?
+    winner = row_win? || diagonal_win? || column_win?
 
-
-    #return 1 if winner
+    return 1 if winner
 
     return 2 if grid_is_full?
 
@@ -105,17 +132,18 @@ class Board
   def main_loop
     loop do
       puts "Current board:"
-      puts to_s
+      print_board
       game_state = game_over?
 
       if game_state == 1#winner found
-        puts "Player #{game_state-1} wins!"
+        puts "#{@active_player.name} wins!"
         return 1
       elsif game_state == 2#draw
         puts "Draw!"
         return 1
       else
         #continue game
+        cycle_active_player
         puts "It's time for #{@active_player.name} to play."
         loop do
           puts "Enter the square you want to play in like this: row, column: "
@@ -124,7 +152,6 @@ class Board
             puts "Enter a valid, unoccupied square"
           else
             place(coords, @active_player.symbol)
-            cycle_active_player
             break
           end
         end
